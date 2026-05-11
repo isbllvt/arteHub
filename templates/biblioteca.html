@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biblioteca de Matrizes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ───── Barra Superior ───── -->
+  <div class="topbar">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="15" fill="#FBEAF0" stroke="#F4C0D1" stroke-width="0.5"/>
+        <line x1="10" y1="8" x2="22" y2="24" stroke="#D4537E" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="22" y1="8" x2="10" y2="24" stroke="#D4537E" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-text">Ateliê <span>Digital</span></span>
+    </div>
+    <div class="topbar-nav">
+      <button class="nav-btn">Encomendas</button>
+      <button class="nav-btn active">Matrizes</button>
+      <button  class="nav-btn" onclick="toggleTheme()">🌙</button>
+
+    </div>
+  </div>
+
+  <!-- ───── Layout Principal ───── -->
+  <div class="main-layout">
+
+    <!-- Sidebar de Filtros -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <label>Pesquisar</label>
+        <input class="search-box" type="text" id="search-input"
+               placeholder="Nome, categoria ou tema..."
+               oninput="filterCards()" />
+      </div>
+
+      <div class="sidebar-section">
+        <label>Categorias</label>
+        <div class="filter-chips" id="filter-chips">
+          <span class="chip active" onclick="setFilter('Todos')">Todos</span>
+          {% for cat in categorias %}
+            <span class="chip" onclick="setFilter('{{ cat }}')">{{ cat }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <label>Resumo</label>
+        <div class="stats-row">
+          <div class="stat-item">
+            <span>Total de matrizes</span>
+            <span id="total-count">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grade de Matrizes -->
+    <div class="content-area">
+      <div class="content-header">
+        <span class="results-label" id="results-label">0 matrizes encontradas</span>
+        <a href="/nova" class="add-btn">+ Nova matriz</a>
+      </div>
+      <div class="grid" id="matrix-grid"></div>
+    </div>
+
+    <!-- Painel de Detalhes -->
+    <div class="panel">
+      <div id="panel-content" class="panel-inner">
+        <div class="panel-empty">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <rect x="4" y="4" width="36" height="36" rx="8" fill="#FBEAF0" stroke="#F4C0D1" stroke-width="0.5"/>
+            <line x1="14" y1="14" x2="30" y2="30" stroke="#ED93B1" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="30" y1="14" x2="14" y2="30" stroke="#ED93B1" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          Selecione uma matriz<br>para ver os detalhes
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-layout -->
+</div><!-- /app -->
+
+<!-- Dados do servidor passados ao JavaScript -->
+<script>
+  const matrices = {{matrizes | tojson | safe }};
+</script>
+<script src="{{ url_for('static', filename='js/biblioteca.js') }}"></script>
+
+</body>
+</html>

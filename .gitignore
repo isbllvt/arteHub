@@ -1,0 +1,19 @@
+# Ambiente virtual 
+.venv/
+
+# Cache do mypy — gerado automaticamente
+.mypy_cache/
+
+# Uploads gerados em execução
+static/uploads/
+
+# Python
+__pycache__/
+*.pyc
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente
+.env
