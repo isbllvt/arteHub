@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Encomendas - Ateliê Digital</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
+</head>
+<body>
+    <div class="topbar">
+        <a href="/" class="logo"><span class="logo-text">Ateliê <span>Digital</span></span></a>
+        <div class="topbar-nav">
+            <a href="/encomenda" class="nav-btn active">Encomendas</a>
+            <a href="/" class="nav-btn">Matrizes</a>
+        </div>
+    </div>
+
+    <div class="content-area" style="padding: 2rem;">
+        <div class="content-header">
+            <h2 style="font-family: 'Playfair Display';">Lista de Encomendas</h2>
+            <a href="/encomenda/nova" class="add-btn">+ Nova Encomenda</a>
+        </div>
+
+        <div style="background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-top: 1rem;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead style="background: var(--bg); border-bottom: 0.5px solid var(--border);">
+                    <tr>
+                        <th style="padding: 15px; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cliente</th>
+                        <th style="padding: 15px; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Produto</th>
+                        <th style="padding: 15px; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Entrega</th>
+                        <th style="padding: 15px; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Status</th>
+                        <th style="padding: 15px; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enc in encomenda %}
+                    <tr style="border-bottom: 0.5px solid var(--border);">
+                        <td style="padding: 15px; font-weight: 500;">{{ enc.cliente_nome }}</td>
+                        <td style="padding: 15px;">{{ enc.quantidade }}x {{ enc.produto_tipo }}</td>
+                        <td style="padding: 15px;">{{ enc.data_entrega }}</td>
+                        <td style="padding: 15px;">
+                            <span class="chip active">{{ enc.status }}</span>
+                        </td>
+                        <td style="padding: 15px; display: flex; gap: 8px;">
+                            <a href="/encomenda/editar/{{ enc._id }}" class="btn-outline" style="text-decoration: none;">Editar</a>
+                            <form action="/encomenda/deletar/{{ enc._id }}" method="POST" style="margin:0;">
+                                <button type="submit" class="btn-outline btn-danger" onclick="return confirm('Excluir encomenda?')">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

@@ -145,5 +145,60 @@ def deletar_matriz(id):
         colecao.delete_one({"_id": ObjectId(id)})
     return redirect(url_for('biblioteca'))
 
+#Encomendas
+
+# Nova coleção
+colecao_encomendas = db["encomendas"]
+
+@app.route('/encomenda')
+def listar_encomendas():
+    encomenda = list(colecao_encomendas.find({}).sort("data_pedido", -1))
+    return render_template('encomenda.html', encomenda=encomenda)
+
+@app.route('/encomenda/nova', methods=['GET', 'POST'])
+def nova_encomenda():
+    if request.method == 'POST':
+        # Coleta as cores enviadas (podem vir vários campos 'cor')
+        cores = request.form.getlist('cores_sugeridas')
+        
+        doc = {
+            "cliente_nome": request.form.get("cliente_nome"),
+            "produto_tipo": request.form.get("produto_tipo"),
+            "quantidade": int(request.form.get("quantidade", 1)),
+            "status": request.form.get("status", "Pendente"),
+            "data_pedido": request.form.get("data_pedido"),
+            "data_entrega": request.form.get("data_entrega"),
+            "cores_sugeridas": cores
+        }
+        colecao_encomendas.insert_one(doc)
+        return redirect(url_for('listar_encomendas'))
+    
+    return render_template('nova_encomenda.html', encomenda=None)
+
+@app.route('/encomenda/editar/<id>', methods=['GET', 'POST'])
+def editar_encomenda(id):
+    encomenda = colecao_encomendas.find_one({"_id": ObjectId(id)})
+    
+    if request.method == 'POST':
+        cores = request.form.getlist('cores_sugeridas')
+        dados_atualizados = {
+            "cliente_nome": request.form.get("cliente_nome"),
+            "produto_tipo": request.form.get("produto_tipo"),
+            "quantidade": int(request.form.get("quantidade", 1)),
+            "status": request.form.get("status"),
+            "data_pedido": request.form.get("data_pedido"),
+            "data_entrega": request.form.get("data_entrega"),
+            "cores_sugeridas": cores
+        }
+        colecao_encomendas.update_one({"_id": ObjectId(id)}, {"$set": dados_atualizados})
+        return redirect(url_for('listar_encomendas'))
+    
+    return render_template('nova_encomenda.html', encomenda=encomenda)
+
+@app.route('/encomenda/deletar/<id>', methods=['POST'])
+def deletar_encomenda(id):
+    colecao_encomendas.delete_one({"_id": ObjectId(id)})
+    return redirect(url_for('listar_encomendas'))
+
 if __name__ == '__main__':
     app.run(debug=True)
