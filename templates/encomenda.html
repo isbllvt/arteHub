@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Encomendas - Ateliê Digital</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="app">
+    <div class="topbar">
+        <a href="/" class="logo" style="text-decoration: none;">
+            <span class="logo-text">Ateliê <span>Digital</span></span>
+        </a>
+        <div class="topbar-nav">
+            <a href="/encomenda" class="nav-btn active">Encomendas</a>
+            <a href="/" class="nav-btn">Matrizes</a>
+            <button class="nav-btn" onclick="toggleTheme()">🌙</button>
+        </div>
+    </div>
+
+    <div class="main-layout" style="grid-template-columns: var(--sidebar-w) 1fr;">
+        
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <label>Pesquisar Cliente</label>
+                <input class="search-box" type="text" id="search-input" placeholder="Nome do cliente ou produto..." oninput="filterOrders()" />
+            </div>
+
+            <div class="sidebar-section">
+                <label>Status</label>
+                <div class="filter-chips" id="status-chips">
+                    <span class="chip active" onclick="setStatusFilter('Todos')">Todos</span>
+                    <span class="chip" onclick="setStatusFilter('Pendente')">Pendente</span>
+                    <span class="chip" onclick="setStatusFilter('Em produção')">Em produção</span>
+                    <span class="chip" onclick="setStatusFilter('Em processo de entrega')">Em processo</span>
+                    <span class="chip" onclick="setStatusFilter('Entregue')">Entregue</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <label>Data de Entrega</label>
+                <input type="date" id="date-filter" class="search-box" onchange="filterOrders()">
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="content-header">
+                <span class="results-label" id="order-results-label">0 encomendas</span>
+                <a href="/encomenda/nova" class="add-btn">+ Nova Encomenda</a>
+            </div>
+            
+            <div class="grid" id="order-grid">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const encomendas = {{ encomenda | tojson | safe }};
+    let activeStatus = 'Todos';
+
+    function toggleTheme() { document.body.classList.toggle("dark"); }
+
+    function setStatusFilter(status) {
+        activeStatus = status;
+        document.querySelectorAll('#status-chips .chip').forEach(chip => {
+            chip.classList.toggle('active', chip.textContent === status || (status === 'Em processo de entrega' && chip.textContent === 'Em processo'));
+        });
+        filterOrders();
+    }
+
+    function filterOrders() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const dateQuery = document.getElementById('date-filter').value;
+
+        const filtered = encomendas.filter(enc => {
+            const matchStatus = activeStatus === 'Todos' || enc.status === activeStatus;
+            const matchQuery = !query || enc.cliente_nome.toLowerCase().includes(query) || enc.produto_tipo.toLowerCase().includes(query);
+            const matchDate = !dateQuery || enc.data_entrega === dateQuery;
+            return matchStatus && matchQuery && matchDate;
+        });
+
+        document.getElementById('order-results-label').textContent = `${filtered.length} encomenda(s) encontrada(s)`;
+        renderOrderGrid(filtered);
+    }
+
+    function renderOrderGrid(list) {
+        const grid = document.getElementById('order-grid');
+        grid.innerHTML = list.map(enc => {
+            
+            // Gera as bolinhas de cores sugeridas no card
+            const colorDots = (enc.cores_sugeridas || []).slice(0, 5).map(c => 
+                `<div class="color-dot" style="background:${c}"></div>`
+            ).join('');
+
+            return `
+            <div class="matrix-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="card-info" style="padding: 15px;">
+                    <div class="card-name" style="font-size: 15px; margin-bottom: 8px;">👤 ${enc.cliente_nome}</div>
+                    <div class="card-meta" style="margin-bottom: 4px;"><strong>Produto:</strong> ${enc.quantidade}x ${enc.produto_tipo}</div>
+                    <div class="card-meta" style="margin-bottom: 12px;"><strong>Entrega:</strong> ${enc.data_entrega ? enc.data_entrega.split('-').reverse().join('/') : 'Não definida'}</div>
+                    
+                    <span class="chip active" style="margin-bottom: 10px; display: inline-block;">${enc.status}</span>
+                    
+                    ${colorDots ? `<div class="card-meta" style="margin-bottom: 4px;">Cores selecionadas:</div><div class="card-colors">${colorDots}</div>` : ''}
+                </div>
+                
+                <div class="panel-actions" style="padding: 10px; display: flex; gap: 5px;">
+                    <a href="/encomenda/editar/${enc._id}" class="btn-outline btn-full" style="text-align: center;">Editar</a>
+                    <form action="/encomenda/deletar/${enc._id}" method="POST" style="margin:0;">
+                        <button type="submit" class="btn-outline btn-danger" style="height: 100%; padding: 8px 10px;" onclick="return confirm('Excluir encomenda?')">🗑</button>
+                    </form>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Render inicial
+    filterOrders();
+</script>
+</body>
+</html>

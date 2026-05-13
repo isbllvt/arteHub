@@ -159,7 +159,7 @@ function buildPanelInfo(m) {
     </div>`;
 }
 
-/** Lista de cores editáveis */
+/** Lista de cores editáveis e envio para Nova Encomenda */
 function buildPanelColors(m) {
   const rows = m.cores.map((c, i) => `
     <div class="color-row">
@@ -171,14 +171,16 @@ function buildPanelColors(m) {
       <span class="color-hex" id="hex-${m.id}-${i}">${c.hex}</span>
     </div>`).join('');
 
+  // Note que o form action agora é /encomenda/nova e o method é GET
   return `
-    <form action="/update_colors/${m.id}" method="POST" class="panel-colors-form">
+    <form action="/encomenda/nova" method="GET" class="panel-colors-form">
+      <input type="hidden" name="matriz_id" value="${m.id}">
       <div class="panel-section">
-        <div class="panel-section-title">Cores — Altere e salve o preview</div>
+        <div class="panel-section-title">Cores — Escolha as cores para a Encomenda</div>
         <div class="color-list">${rows}</div>
       </div>
       <div class="panel-actions">
-        <button type="submit" class="btn-primary btn-full">Salvar Novas Cores</button>
+        <button type="submit" class="btn-primary btn-full">Criar Encomenda c/ Estas Cores</button>
       </div>
     </form>`;
 }

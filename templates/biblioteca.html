@@ -23,8 +23,8 @@
       <span class="logo-text">Ateliê <span>Digital</span></span>
     </div>
     <div class="topbar-nav">
-      <button class="nav-btn">Encomendas</button>
-      <button class="nav-btn active">Matrizes</button>
+      <a href="{{ url_for('listar_encomendas') }}" class="nav-btn">Encomendas</a>
+      <a href="{{ url_for('biblioteca') }}" class="nav-btn active">Matrizes</a>
       <button  class="nav-btn" onclick="toggleTheme()">🌙</button>
 
     </div>
