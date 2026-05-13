@@ -15,6 +15,7 @@
         <div class="card-form">
             <h2>{% if encomenda %}Editar{% else %}Nova{% endif %} Encomenda</h2>
             <form method="POST">
+                <input type="hidden" name="matriz_id" value="{{ encomenda.matriz_id if encomenda and encomenda.matriz_id else '' }}">
                 <div class="form-group">
                     <label>Nome do Cliente</label>
                     <input type="text" name="cliente_nome" value="{{ encomenda.cliente_nome if encomenda else '' }}" required>

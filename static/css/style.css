@@ -38,7 +38,7 @@
   --topbar-h:    52px;
 }
 
-body.dark {
+html.dark, body.dark {
   --pink:        #ff79a8;
   --pink-light:  #2a1d23;
   --pink-border: #5a3443;

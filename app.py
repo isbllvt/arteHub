@@ -143,24 +143,36 @@ def deletar_matriz(id):
         if os.path.exists(pes): os.remove(pes)
         if os.path.exists(png): os.remove(png)
         colecao.delete_one({"_id": ObjectId(id)})
-    return redirect(url_for('biblioteca'))
-
-#Encomendas
-
-# Nova coleção
+# ---------------------------------------------------
+# ENCOMENDAS
+# ---------------------------------------------------
 colecao_encomendas = db["encomendas"]
 
 @app.route('/encomenda')
 def listar_encomendas():
-    encomenda = list(colecao_encomendas.find({}).sort("data_pedido", -1))
-    return render_template('encomenda.html', encomenda=encomenda)
+    encomendas_db = list(colecao_encomendas.find({}).sort("data_pedido", -1))
+    encomendas = []
+    
+    # Preparando os dados para serem usados pelo JavaScript no frontend
+    for enc in encomendas_db:
+        encomendas.append({
+            "_id": str(enc["_id"]),
+            "cliente_nome": enc.get("cliente_nome", ""),
+            "produto_tipo": enc.get("produto_tipo", ""),
+            "quantidade": enc.get("quantidade", 1),
+            "status": enc.get("status", "Pendente"),
+            "data_pedido": enc.get("data_pedido", ""),
+            "data_entrega": enc.get("data_entrega", ""),
+            "cores_sugeridas": enc.get("cores_sugeridas", []),
+            "matriz_id": enc.get("matriz_id", "")
+        })
+        
+    return render_template('encomenda.html', encomenda=encomendas)
 
 @app.route('/encomenda/nova', methods=['GET', 'POST'])
 def nova_encomenda():
     if request.method == 'POST':
-        # Coleta as cores enviadas (podem vir vários campos 'cor')
         cores = request.form.getlist('cores_sugeridas')
-        
         doc = {
             "cliente_nome": request.form.get("cliente_nome"),
             "produto_tipo": request.form.get("produto_tipo"),
@@ -168,12 +180,28 @@ def nova_encomenda():
             "status": request.form.get("status", "Pendente"),
             "data_pedido": request.form.get("data_pedido"),
             "data_entrega": request.form.get("data_entrega"),
-            "cores_sugeridas": cores
+            "cores_sugeridas": cores,
+            "matriz_id": request.form.get("matriz_id", "") # Salva a referência da matriz
         }
         colecao_encomendas.insert_one(doc)
         return redirect(url_for('listar_encomendas'))
     
-    return render_template('nova_encomenda.html', encomenda=None)
+    # Lógica para pegar as cores enviadas pelo painel da biblioteca (GET)
+    matriz_id = request.args.get('matriz_id')
+    cores_sugeridas = []
+    
+    if matriz_id:
+        i = 0
+        # Lê os parâmetros color_0, color_1 da URL gerada pelo painel
+        while f'color_{i}' in request.args:
+            cores_sugeridas.append(request.args.get(f'color_{i}'))
+            i += 1
+            
+    encomenda_mock = None
+    if matriz_id or cores_sugeridas:
+        encomenda_mock = {"cores_sugeridas": cores_sugeridas, "matriz_id": matriz_id}
+        
+    return render_template('nova_encomenda.html', encomenda=encomenda_mock)
 
 @app.route('/encomenda/editar/<id>', methods=['GET', 'POST'])
 def editar_encomenda(id):
@@ -188,7 +216,8 @@ def editar_encomenda(id):
             "status": request.form.get("status"),
             "data_pedido": request.form.get("data_pedido"),
             "data_entrega": request.form.get("data_entrega"),
-            "cores_sugeridas": cores
+            "cores_sugeridas": cores,
+            "matriz_id": request.form.get("matriz_id", encomenda.get("matriz_id", ""))
         }
         colecao_encomendas.update_one({"_id": ObjectId(id)}, {"$set": dados_atualizados})
         return redirect(url_for('listar_encomendas'))
