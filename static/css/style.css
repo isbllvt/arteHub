@@ -626,3 +626,39 @@ body {
 .add-btn:hover {
   background: var(--pink-border);
 }
+
+/* ── 9. Estilo de Modais ─────────────────────────── */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 18, 0.5);
+  z-index: 50;
+  padding: 1.5rem;
+}
+
+.modal.open {
+  display: flex;
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 560px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
