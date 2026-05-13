@@ -21,6 +21,7 @@
   --pink-light:  #FBEAF0;
   --pink-border: #F4C0D1;
   --pink-mid:    #ED93B1;
+  --card-thumb-bg: #ffecf3;
 
   --text:        #2D2D2D;
   --text-muted:  #9A8F96;
@@ -43,6 +44,7 @@ body.dark {
   --pink-light:  #2a1d23;
   --pink-border: #5a3443;
   --pink-mid:    #c85d86;
+  --card-thumb-bg: #ffecf3;
 
   --text:        #F5F5F5;
   --text-muted:  #B8B8B8;
@@ -277,7 +279,7 @@ body {
 
 .card-thumb {
   padding: 15px;
-  background: var(--pink-light);
+  background: var(--card-thumb-bg);
   aspect-ratio: 1;
   display: flex;
   align-items: center;
@@ -289,6 +291,7 @@ body {
   height: 100%;
   object-fit: contain;
   mix-blend-mode: multiply;
+  background: var(--card-thumb-bg);
 }
 
 .card-info {
@@ -378,6 +381,7 @@ body {
 .panel-preview {
   padding: 1.25rem;
   border-bottom: 0.5px solid var(--border);
+  background: var(--card-thumb-bg);
 }
 
 .panel-preview img {
@@ -385,9 +389,9 @@ body {
   aspect-ratio: 1;
   object-fit: contain;
   border-radius: var(--radius-md);
-  background: var(--pink-light);
+  background: var(--card-thumb-bg);
   padding: 10px;
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
 }
 
 /* Seções genéricas do painel */
