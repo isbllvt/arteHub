@@ -215,6 +215,17 @@ function updateSwatch(input, matrixId, colorIndex) {
 }
 
 // ─────────────────────────────────────────────
+// Janela Modal para nova matriz
+// ─────────────────────────────────────────────
+function openNewMatrixModal() {
+  document.getElementById('novaModal').classList.add('open');
+}
+
+function closeNewMatrixModal() {
+  document.getElementById('novaModal').classList.remove('open');
+}
+
+// ─────────────────────────────────────────────
 // Inicialização
 // ─────────────────────────────────────────────
 filterCards();

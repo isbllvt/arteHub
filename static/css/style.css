@@ -21,6 +21,7 @@
   --pink-light:  #FBEAF0;
   --pink-border: #F4C0D1;
   --pink-mid:    #ED93B1;
+  --card-thumb-bg: #ffecf3;
 
   --text:        #2D2D2D;
   --text-muted:  #9A8F96;
@@ -43,6 +44,7 @@ body.dark {
   --pink-light:  #2a1d23;
   --pink-border: #5a3443;
   --pink-mid:    #c85d86;
+  --card-thumb-bg: #ffecf3;
 
   --text:        #F5F5F5;
   --text-muted:  #B8B8B8;
@@ -277,7 +279,7 @@ body {
 
 .card-thumb {
   padding: 15px;
-  background: var(--pink-light);
+  background: var(--card-thumb-bg);
   aspect-ratio: 1;
   display: flex;
   align-items: center;
@@ -289,6 +291,7 @@ body {
   height: 100%;
   object-fit: contain;
   mix-blend-mode: multiply;
+  background: var(--card-thumb-bg);
 }
 
 .card-info {
@@ -378,6 +381,7 @@ body {
 .panel-preview {
   padding: 1.25rem;
   border-bottom: 0.5px solid var(--border);
+  background: var(--card-thumb-bg);
 }
 
 .panel-preview img {
@@ -385,9 +389,9 @@ body {
   aspect-ratio: 1;
   object-fit: contain;
   border-radius: var(--radius-md);
-  background: var(--pink-light);
+  background: var(--card-thumb-bg);
   padding: 10px;
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
 }
 
 /* Seções genéricas do painel */
@@ -622,3 +626,76 @@ body {
 .add-btn:hover {
   background: var(--pink-border);
 }
+
+/* ── 9. Estilo de Modais ─────────────────────────── */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 18, 0.55);
+  z-index: 1000;
+  padding: 1.5rem;
+  overflow: auto;
+}
+
+.modal.open {
+  display: flex;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.55);
+}
+
+.modal-dialog {
+  position: relative;
+  width: min(100%, 560px);
+  max-width: 560px;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  padding: 2rem;
+  z-index: 1;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 1rem;
+  }
+
+  .modal-dialog {
+    width: min(100%, 100%);
+    max-width: 100%;
+    padding: 1.25rem;
+    border-radius: 1rem;
+  }
+
+  .modal-close {
+    top: 12px;
+    right: 12px;
+  }
+}
+
