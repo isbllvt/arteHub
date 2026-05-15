@@ -143,6 +143,7 @@ def deletar_matriz(id):
         if os.path.exists(pes): os.remove(pes)
         if os.path.exists(png): os.remove(png)
         colecao.delete_one({"_id": ObjectId(id)})
+    return redirect(url_for('biblioteca'))
 # ---------------------------------------------------
 # ENCOMENDAS
 # ---------------------------------------------------
