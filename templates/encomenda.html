@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <meta name="color-scheme" content="light dark">
     <meta charset="UTF-8">
     <title>Encomendas - Ateliê Digital</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -14,9 +15,9 @@
             <span class="logo-text">Ateliê <span>Digital</span></span>
         </a>
         <div class="topbar-nav">
+            <a href="/relatorio" class="nav-btn">Relatórios</a>
             <a href="/encomenda" class="nav-btn active">Encomendas</a>
             <a href="/" class="nav-btn">Matrizes</a>
-            <button class="nav-btn" onclick="toggleTheme()">🌙</button>
         </div>
     </div>
 
@@ -98,8 +99,9 @@
             return `
             <div class="matrix-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div class="card-info" style="padding: 15px;">
-                    <div class="card-name" style="font-size: 15px; margin-bottom: 8px;">👤 ${enc.cliente_nome}</div>
+                    <div class="card-name" style="font-size: 15px; margin-bottom: 8px;"> ${enc.cliente_nome}</div>
                     <div class="card-meta" style="margin-bottom: 4px;"><strong>Produto:</strong> ${enc.quantidade}x ${enc.produto_tipo}</div>
+                    <div class="card-meta" style="margin-bottom: 4px;"><strong>Matriz:</strong> ${enc.matriz_nome}</div>
                     <div class="card-meta" style="margin-bottom: 12px;"><strong>Entrega:</strong> ${enc.data_entrega ? enc.data_entrega.split('-').reverse().join('/') : 'Não definida'}</div>
                     
                     <span class="chip active" style="margin-bottom: 10px; display: inline-block;">${enc.status}</span>

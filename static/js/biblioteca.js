@@ -100,7 +100,7 @@ function renderGrid(list) {
  */
 function selectMatrix(id) {
   selectedId = id;
-  filterCards(); // re-renderiza para marcar o card como selecionado
+  filterCards(); 
 
   const m = matrices.find(x => x.id === id);
   if (!m) return;
@@ -114,6 +114,19 @@ function selectMatrix(id) {
     ${buildPanelColors(m)}
     ${buildPanelActions(m)}
   `;
+
+  document.querySelector('.panel').classList.add('open');
+}
+
+function buildPanelHeader(m) {
+  return `
+    <div class="panel-header" style="display:flex; justify-content:space-between;">
+      <div>
+        <div class="panel-title">${m.nome}</div>
+        <div class="panel-subtitle">${m.categoria} · ${m.arquivo}</div>
+      </div>
+      <button onclick="document.querySelector('.panel').classList.remove('open')" class="btn-outline" style="border:none; padding:0; font-size:18px;">✕</button>
+    </div>`;
 }
 
 /** Cabeçalho do painel: nome e arquivo */

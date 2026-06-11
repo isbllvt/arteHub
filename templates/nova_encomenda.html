@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <meta name="color-scheme" content="light dark">
     <meta charset="UTF-8">
     <title>Encomenda - Ateliê Digital</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -36,6 +37,16 @@
                         <label>Quantidade</label>
                         <input type="number" name="quantidade" value="{{ encomenda.quantidade if encomenda else '1' }}" min="1">
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Matriz Associada</label>
+                    <select name="matriz_id" style="width: 100%; padding: 10px; border-radius: 6px; border: 0.5px solid var(--border); font-family: 'DM Sans'; background: var(--bg); color: var(--text);">
+                        <option value="">Nenhuma matriz</option>
+                        {% for m in matrizes %}
+                            <option value="{{ m._id }}" {% if encomenda and encomenda.matriz_id == m._id|string %}selected{% endif %}>{{ m.nome }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="form-group">

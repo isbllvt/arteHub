@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Relatórios e Histórico - Ateliê Digital</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <style>
+    /* Responsividade específica da página */
+    .dashboard-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; }
+    @media (max-width: 1024px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+      <div class="app">
+    <div class="topbar">
+        <a href="/" class="logo" style="text-decoration: none;">
+            <span class="logo-text">Ateliê <span>Digital</span></span>
+        </a>
+        <div class="topbar-nav">
+            <a href="/relatorio" class="nav-btn active">Relatórios</a>
+            <a href="/encomenda" class="nav-btn ">Encomendas</a>
+            <a href="/" class="nav-btn">Matrizes</a>
+        </div>
+    </div>
+    </header>
+
+    <div class="main-layout">
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <label>Buscar no Histórico</label>
+          <input type="text" id="search-history" class="search-box" placeholder="Pesquise pedidos..." oninput="renderDashboard()">
+        </div>
+
+        <div class="sidebar-section">
+          <label>Período</label>
+          <select id="year-filter" class="search-box" onchange="renderDashboard()">
+            <option value="Todos">Todos os anos</option>
+            </select>
+        </div>
+
+        <div class="sidebar-section" style="margin-top: auto;">
+          <button class="btn-outline" style="width: 100%; margin-bottom: 8px;" onclick="window.print()"> Salvar PDF</button>
+        </div>
+      </aside>
+
+      <main class="content-area">
+        
+        <section>
+          <h2 class="section-title">Resumo <span id="label-year" style="font-size:14px; color:var(--text-muted); font-family:'DM Sans';">Geral</span></h2>
+          
+          <div class="summary-grid">
+            <div class="summary-card">
+              <div class="summary-info">
+                <h4>Melhor Cliente</h4>
+                <p id="top-client">-</p>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-info">
+                <h4>Produto Favorito</h4>
+                <p id="top-product" style="font-size: 14px; padding-top: 4px;">-</p>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-info">
+                <h4>Total Entregues</h4>
+                <p id="total-delivered">0</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <div class="chart-section">
+            <div class="chart-header">
+              <span style="background: var(--pink); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">Desempenho</span>
+              <span>Fluxo de Pedidos (Mockup)</span>
+              <span style="font-size: 12px;">&lt; <span id="chart-year">2025</span> &gt;</span>
+            </div>
+            <div class="chart-mockup">
+              <div class="bar-group"><div class="bar-out" style="height: 30%;"></div><div class="bar-in" style="height: 40%;"></div></div>
+              <div class="bar-group"><div class="bar-out" style="height: 25%;"></div><div class="bar-in" style="height: 60%;"></div></div>
+              <div class="bar-group"><div class="bar-out" style="height: 30%;"></div><div class="bar-in" style="height: 45%;"></div></div>
+              <div class="bar-group"><div class="bar-out" style="height: 20%;"></div><div class="bar-in" style="height: 80%;"></div></div>
+              <div class="bar-group"><div class="bar-out" style="height: 15%;"></div><div class="bar-in" style="height: 35%;"></div></div>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+              <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #8B5CF6; border-radius: 2px;"></span> Pedidos Criados</span>
+              <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: var(--pink); border-radius: 2px;"></span> Concluídos</span>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--text);">Detalhes</h3>
+            <div class="details-grid">
+              <div class="detail-item"><span class="detail-label">Total de Vendas (Qtd)</span><span class="detail-value" id="detail-qty">0</span></div>
+              <div class="detail-item"><span class="detail-label">Mês Mais Ativo</span><span class="detail-value" id="detail-month">-</span></div>
+              <div class="detail-item"><span class="detail-label">Produto Mais Vendido</span><span class="detail-value" id="detail-top-product">-</span></div>
+              <div class="detail-item"><span class="detail-label" style="color: #C0392B;">Atrasados/Pendentes</span><span class="detail-value" id="detail-pending" style="color: #C0392B;">0</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="section-title">Histórico de Pedidos</h2>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">Status</th>
+                  <th style="width: 200px;">Cliente & Data</th>
+                  <th>Produto / Descrição</th>
+                  <th>Qtd</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                </tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const encomendas = {{ encomendas | tojson | safe }};
+    
+    // Extrai anos únicos das datas para o filtro
+    const years = [...new Set(encomendas.map(e => {
+      if(e.data_pedido) return e.data_pedido.substring(0,4);
+      return null;
+    }).filter(y => y))].sort().reverse();
+
+    const yearSelect = document.getElementById('year-filter');
+    years.forEach(y => {
+      const option = document.createElement('option');
+      option.value = y;
+      option.textContent = `Ano de ${y}`;
+      yearSelect.appendChild(option);
+    });
+
+    // Função principal para calcular e renderizar tudo
+    function renderDashboard() {
+      const selectedYear = yearSelect.value;
+      const searchQuery = document.getElementById('search-history').value.toLowerCase();
+      
+      document.getElementById('label-year').textContent = selectedYear === 'Todos' ? 'Geral' : selectedYear;
+      document.getElementById('chart-year').textContent = selectedYear === 'Todos' ? 'Geral' : selectedYear;
+
+      // 1. Filtra os dados
+      let filtered = encomendas.filter(e => {
+        const matchYear = selectedYear === 'Todos' || (e.data_pedido && e.data_pedido.startsWith(selectedYear));
+        const matchSearch = e.cliente_nome.toLowerCase().includes(searchQuery) || e.produto_tipo.toLowerCase().includes(searchQuery);
+        return matchYear && matchSearch;
+      });
+
+      // 2. Cálculos Estatísticos
+      let totalQty = 0;
+      let deliveredCount = 0;
+      let pendingCount = 0;
+      let clientCounts = {};
+      let productCounts = {};
+      let monthCounts = {};
+
+      filtered.forEach(e => {
+        totalQty += e.quantidade;
+        if(e.status === 'Entregue') deliveredCount++;
+        if(e.status === 'Pendente' || e.status === 'Em produção') pendingCount++;
+
+        clientCounts[e.cliente_nome] = (clientCounts[e.cliente_nome] || 0) + e.quantidade;
+        productCounts[e.produto_tipo] = (productCounts[e.produto_tipo] || 0) + e.quantidade;
+
+        if(e.data_pedido) {
+          const month = e.data_pedido.substring(5,7);
+          monthCounts[month] = (monthCounts[month] || 0) + 1;
+        }
+      });
+
+      // Funções auxiliares para achar o item com maior contagem
+      const getTop = (obj) => Object.keys(obj).length ? Object.keys(obj).reduce((a, b) => obj[a] > obj[b] ? a : b) : '-';
+      
+      const topClient = getTop(clientCounts);
+      const topProduct = getTop(productCounts);
+      const topMonthNum = getTop(monthCounts);
+      
+      const monthNames = {"01":"Jan","02":"Fev","03":"Mar","04":"Abr","05":"Mai","06":"Jun","07":"Jul","08":"Ago","09":"Set","10":"Out","11":"Nov","12":"Dez"};
+      const topMonthStr = topMonthNum !== '-' ? monthNames[topMonthNum] : '-';
+
+      // 3. Atualiza a Tela
+      document.getElementById('top-client').textContent = topClient;
+      document.getElementById('top-product').textContent = topProduct !== '-' ? `${topProduct} (${productCounts[topProduct]})` : '-';
+      document.getElementById('total-delivered').textContent = deliveredCount;
+      
+      document.getElementById('detail-qty').textContent = totalQty;
+      document.getElementById('detail-top-product').textContent = topProduct;
+      document.getElementById('detail-month').textContent = topMonthStr;
+      document.getElementById('detail-pending').textContent = pendingCount;
+
+      // 4. Renderiza a Tabela
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = filtered.map(enc => `
+        <tr>
+          <td><span style="background: var(--pink-light); color: var(--pink); padding: 4px 8px; border-radius: 12px; font-size: 11px;">${enc.status}</span></td>
+          <td>
+            <div style="font-weight: 500; color: var(--pink);">${enc.cliente_nome}</div>
+            <div class="desc-text">${enc.data_pedido ? enc.data_pedido.split('-').reverse().join('/') : 'Sem data'}</div>
+          </td>
+          <td class="desc-text">${enc.produto_tipo}</td>
+          <td style="font-weight: 500;">${enc.quantidade}</td>
+        </tr>
+      `).join('');
+
+      if(filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum pedido encontrado.</td></tr>`;
+      }
+    }
+
+    // Renderiza inicialmente
+    renderDashboard();
+  </script>
+</body>
+</html>
