@@ -561,6 +561,15 @@ body {
   transition: border-color 0.15s;
 }
 
+.grid-group {
+  width: 100%;
+}
+
+.grid-group input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .form-group input:focus {
   border-color: var(--pink-mid);
 }

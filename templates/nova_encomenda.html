@@ -23,7 +23,7 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
+                    <div class="form-group grid-group">
                         <label>Tipo de Produto</label>
                         <input type="text" name="produto_tipo" list="lista-produtos" value="{{ encomenda.produto_tipo if encomenda else '' }}" required>
                         <datalist id="lista-produtos">
@@ -33,7 +33,7 @@
                             <option value="Body">
                         </datalist>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group grid-group">
                         <label>Quantidade</label>
                         <input type="number" name="quantidade" value="{{ encomenda.quantidade if encomenda else '1' }}" min="1">
                     </div>
@@ -59,7 +59,7 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
+                    <div class="form-group Z">
                         <label>Data Pedido</label>
                         <input type="date" name="data_pedido" value="{{ encomenda.data_pedido if encomenda else '' }}">
                     </div>

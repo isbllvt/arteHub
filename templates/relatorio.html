@@ -80,29 +80,22 @@
         </section>
 
         <section class="dashboard-grid">
-          <div class="chart-section">
+          <div class="chart-section chart-card">
             <div class="chart-header">
-              <span style="background: var(--pink); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">Desempenho</span>
-              <span>Fluxo de Pedidos (Mockup)</span>
+              <span>Fluxo de Pedidos</span>
               <span style="font-size: 12px;">&lt; <span id="chart-year">2025</span> &gt;</span>
             </div>
-            <div class="chart-mockup">
-              <div class="bar-group"><div class="bar-out" style="height: 30%;"></div><div class="bar-in" style="height: 40%;"></div></div>
-              <div class="bar-group"><div class="bar-out" style="height: 25%;"></div><div class="bar-in" style="height: 60%;"></div></div>
-              <div class="bar-group"><div class="bar-out" style="height: 30%;"></div><div class="bar-in" style="height: 45%;"></div></div>
-              <div class="bar-group"><div class="bar-out" style="height: 20%;"></div><div class="bar-in" style="height: 80%;"></div></div>
-              <div class="bar-group"><div class="bar-out" style="height: 15%;"></div><div class="bar-in" style="height: 35%;"></div></div>
+            <div style="padding: 14px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; margin-top: 12px;">
+              <canvas id="ordersChart" aria-label="Fluxo de pedidos por mês" role="img"></canvas>
             </div>
             <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 10px; font-size: 12px; color: var(--text-muted);">
-              <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #8B5CF6; border-radius: 2px;"></span> Pedidos Criados</span>
-              <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: var(--pink); border-radius: 2px;"></span> Concluídos</span>
             </div>
           </div>
 
           <div>
             <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--text);">Detalhes</h3>
             <div class="details-grid">
-              <div class="detail-item"><span class="detail-label">Total de Vendas (Qtd)</span><span class="detail-value" id="detail-qty">0</span></div>
+              <div class="detail-item"><span class="detail-label">Total de Vendas</span><span class="detail-value" id="detail-qty">0</span></div>
               <div class="detail-item"><span class="detail-label">Mês Mais Ativo</span><span class="detail-value" id="detail-month">-</span></div>
               <div class="detail-item"><span class="detail-label">Produto Mais Vendido</span><span class="detail-value" id="detail-top-product">-</span></div>
               <div class="detail-item"><span class="detail-label" style="color: #C0392B;">Atrasados/Pendentes</span><span class="detail-value" id="detail-pending" style="color: #C0392B;">0</span></div>
@@ -117,9 +110,9 @@
               <thead>
                 <tr>
                   <th style="width: 50px;">Status</th>
-                  <th style="width: 200px;">Cliente & Data</th>
+                  <th style="width: 200px;">Cliente & Data Entrega</th>
                   <th>Produto / Descrição</th>
-                  <th>Qtd</th>
+                  <th>Quantidade</th>
                 </tr>
               </thead>
               <tbody id="history-table-body">
@@ -132,9 +125,10 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const encomendas = {{ encomendas | tojson | safe }};
-    
+
     // Extrai anos únicos das datas para o filtro
     const years = [...new Set(encomendas.map(e => {
       if(e.data_pedido) return e.data_pedido.substring(0,4);
@@ -148,6 +142,62 @@
       option.textContent = `Ano de ${y}`;
       yearSelect.appendChild(option);
     });
+
+    // Chart.js instance
+    let ordersChart = null;
+
+    function createOrUpdateChart(createdData, completedData) {
+      const ctx = document.getElementById('ordersChart').getContext('2d');
+      const rootStyle = getComputedStyle(document.documentElement);
+      const pink = rootStyle.getPropertyValue('--pink').trim() || '#D4537E';
+      const purple = '#8B5CF6';
+      const borderColor = rootStyle.getPropertyValue('--border').trim() || 'rgba(0,0,0,0.07)';
+
+      const labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+      if(!ordersChart) {
+        document.getElementById('ordersChart').style.height = '300px';
+        ordersChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Pedidos Criados',
+                backgroundColor: purple,
+                borderColor: purple,
+                borderWidth: 0,
+                data: createdData
+              },
+              {
+                label: 'Pedidos Concluídos',
+                backgroundColor: pink,
+                borderColor: pink,
+                borderWidth: 0,
+                data: completedData
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { grid: { color: 'transparent' } },
+              y: { beginAtZero: true, grid: { color: borderColor } }
+            },
+            plugins: {
+              legend: { labels: { boxWidth: 12, padding: 10 } },
+              tooltip: { mode: 'index', intersect: false }
+            }
+          }
+        });
+      } else {
+        ordersChart.data.datasets[0].data = createdData;
+        ordersChart.data.datasets[1].data = completedData;
+        ordersChart.update();
+      }
+    }
 
     // Função principal para calcular e renderizar tudo
     function renderDashboard() {
@@ -172,6 +222,10 @@
       let productCounts = {};
       let monthCounts = {};
 
+      // arrays para o gráfico (12 meses)
+      const createdPerMonth = new Array(12).fill(0);
+      const completedPerMonth = new Array(12).fill(0);
+
       filtered.forEach(e => {
         totalQty += e.quantidade;
         if(e.status === 'Entregue') deliveredCount++;
@@ -181,8 +235,13 @@
         productCounts[e.produto_tipo] = (productCounts[e.produto_tipo] || 0) + e.quantidade;
 
         if(e.data_pedido) {
-          const month = e.data_pedido.substring(5,7);
-          monthCounts[month] = (monthCounts[month] || 0) + 1;
+          const monthIdx = parseInt(e.data_pedido.substring(5,7), 10) - 1;
+          if(!isNaN(monthIdx) && monthIdx >= 0 && monthIdx < 12) {
+            createdPerMonth[monthIdx] += 1;
+            if(e.status === 'Entregue') completedPerMonth[monthIdx] += 1;
+            const monthKey = ('' + (monthIdx+1)).padStart(2,'0');
+            monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+          }
         }
       });
 
@@ -223,6 +282,9 @@
       if(filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Nenhum pedido encontrado.</td></tr>`;
       }
+
+      // 5. Atualiza o gráfico
+      createOrUpdateChart(createdPerMonth, completedPerMonth);
     }
 
     // Renderiza inicialmente
