@@ -1,12 +1,15 @@
 import os
 import time
-from flask import Flask, request, render_template, url_for, redirect
-import pyembroidery
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from dotenv import load_dotenv
+from flask import Flask, request, render_template, url_for, redirect  # type: ignore
+import pyembroidery  # type: ignore
+from pymongo import MongoClient  # type: ignore
+from bson import ObjectId  # type: ignore
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv()
+except ImportError:
+    pass
 
 app = Flask(__name__)
 
@@ -143,6 +146,7 @@ def deletar_matriz(id):
         if os.path.exists(pes): os.remove(pes)
         if os.path.exists(png): os.remove(png)
         colecao.delete_one({"_id": ObjectId(id)})
+    return redirect(url_for('biblioteca'))
 # ---------------------------------------------------
 # ENCOMENDAS
 # ---------------------------------------------------
@@ -153,8 +157,16 @@ def listar_encomendas():
     encomendas_db = list(colecao_encomendas.find({}).sort("data_pedido", -1))
     encomendas = []
     
-    # Preparando os dados para serem usados pelo JavaScript no frontend
     for enc in encomendas_db:
+        # Busca o nome da matriz vinculada
+        matriz_nome = "Nenhuma"
+        if enc.get("matriz_id"):
+            try:
+                matriz = colecao.find_one({"_id": ObjectId(enc["matriz_id"])})
+                if matriz: matriz_nome = matriz.get("nome", "Matriz Excluída")
+            except:
+                pass
+
         encomendas.append({
             "_id": str(enc["_id"]),
             "cliente_nome": enc.get("cliente_nome", ""),
@@ -164,13 +176,17 @@ def listar_encomendas():
             "data_pedido": enc.get("data_pedido", ""),
             "data_entrega": enc.get("data_entrega", ""),
             "cores_sugeridas": enc.get("cores_sugeridas", []),
-            "matriz_id": enc.get("matriz_id", "")
+            "matriz_id": enc.get("matriz_id", ""),
+            "matriz_nome": matriz_nome
         })
         
     return render_template('encomenda.html', encomenda=encomendas)
 
 @app.route('/encomenda/nova', methods=['GET', 'POST'])
 def nova_encomenda():
+    # Busca lista de matrizes para o dropdown
+    matrizes_db = list(colecao.find({}, {"_id": 1, "nome": 1}))
+
     if request.method == 'POST':
         cores = request.form.getlist('cores_sugeridas')
         doc = {
@@ -181,18 +197,16 @@ def nova_encomenda():
             "data_pedido": request.form.get("data_pedido"),
             "data_entrega": request.form.get("data_entrega"),
             "cores_sugeridas": cores,
-            "matriz_id": request.form.get("matriz_id", "") # Salva a referência da matriz
+            "matriz_id": request.form.get("matriz_id", "") 
         }
         colecao_encomendas.insert_one(doc)
         return redirect(url_for('listar_encomendas'))
     
-    # Lógica para pegar as cores enviadas pelo painel da biblioteca (GET)
     matriz_id = request.args.get('matriz_id')
     cores_sugeridas = []
     
     if matriz_id:
         i = 0
-        # Lê os parâmetros color_0, color_1 da URL gerada pelo painel
         while f'color_{i}' in request.args:
             cores_sugeridas.append(request.args.get(f'color_{i}'))
             i += 1
@@ -201,11 +215,12 @@ def nova_encomenda():
     if matriz_id or cores_sugeridas:
         encomenda_mock = {"cores_sugeridas": cores_sugeridas, "matriz_id": matriz_id}
         
-    return render_template('nova_encomenda.html', encomenda=encomenda_mock)
+    return render_template('nova_encomenda.html', encomenda=encomenda_mock, matrizes=matrizes_db)
 
 @app.route('/encomenda/editar/<id>', methods=['GET', 'POST'])
 def editar_encomenda(id):
     encomenda = colecao_encomendas.find_one({"_id": ObjectId(id)})
+    matrizes_db = list(colecao.find({}, {"_id": 1, "nome": 1}))
     
     if request.method == 'POST':
         cores = request.form.getlist('cores_sugeridas')
@@ -217,17 +232,35 @@ def editar_encomenda(id):
             "data_pedido": request.form.get("data_pedido"),
             "data_entrega": request.form.get("data_entrega"),
             "cores_sugeridas": cores,
-            "matriz_id": request.form.get("matriz_id", encomenda.get("matriz_id", ""))
+            "matriz_id": request.form.get("matriz_id", "")
         }
         colecao_encomendas.update_one({"_id": ObjectId(id)}, {"$set": dados_atualizados})
         return redirect(url_for('listar_encomendas'))
     
-    return render_template('nova_encomenda.html', encomenda=encomenda)
+    return render_template('nova_encomenda.html', encomenda=encomenda, matrizes=matrizes_db)
 
 @app.route('/encomenda/deletar/<id>', methods=['POST'])
 def deletar_encomenda(id):
     colecao_encomendas.delete_one({"_id": ObjectId(id)})
     return redirect(url_for('listar_encomendas'))
+
+@app.route('/relatorio')
+def relatorios():
+    encomendas_db = list(colecao_encomendas.find({}).sort("data_pedido", -1))
+    encomendas = []
+    
+    for enc in encomendas_db:
+        encomendas.append({
+            "_id": str(enc["_id"]),
+            "cliente_nome": enc.get("cliente_nome", ""),
+            "produto_tipo": enc.get("produto_tipo", ""),
+            "quantidade": enc.get("quantidade", 1),
+            "status": enc.get("status", "Pendente"),
+            "data_pedido": enc.get("data_pedido", ""),
+            "data_entrega": enc.get("data_entrega", "")
+        })
+        
+    return render_template('relatorio.html', encomendas=encomendas)
 
 if __name__ == '__main__':
     app.run(debug=True)

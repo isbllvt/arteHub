@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta name="color-scheme" content="light dark">
 </head>
 <body>
 
@@ -23,9 +24,9 @@
       <span class="logo-text">Ateliê <span>Digital</span></span>
     </div>
     <div class="topbar-nav">
+      <a href="/relatorio" class="nav-btn">Relatórios</a>
       <a href="{{ url_for('listar_encomendas') }}" class="nav-btn">Encomendas</a>
       <a href="{{ url_for('biblioteca') }}" class="nav-btn active">Matrizes</a>
-      <button  class="nav-btn" onclick="toggleTheme()">🌙</button>
 
     </div>
   </div>
