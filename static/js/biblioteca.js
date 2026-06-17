@@ -192,8 +192,11 @@ function buildPanelColors(m) {
         <div class="panel-section-title">Cores — Escolha as cores para a Encomenda</div>
         <div class="color-list">${rows}</div>
       </div>
-      <div class="panel-actions">
-        <button type="submit" class="btn-primary btn-full">Criar Encomenda c/ Estas Cores</button>
+      <div class="panel-actions" style="display: flex; gap: 10px; flex-direction: column;">
+        <button type="button" class="btn-outline btn-full" onclick="openColorPreview('${m.id}')">
+          Visualizar com Cores Selecionadas
+        </button>
+        <button type="submit" class="btn-primary btn-full">Criar Encomendas Com Essas Cores</button>
       </div>
     </form>`;
 }
@@ -239,6 +242,53 @@ function openNewMatrixModal() {
 function closeNewMatrixModal() {
   document.getElementById('novaModal').classList.remove('open');
 }
+
+// ─────────────────────────────────────────────
+// Preview de Cores
+// ─────────────────────────────────────────────
+function openColorPreview(matrixId) {
+  // Coleta as cores selecionadas do painel
+  const colorInputs = document.querySelectorAll('.panel-colors-form input[type="color"]');
+  const colors = {};
+  
+  colorInputs.forEach(input => {
+    if (input.name.startsWith('color_')) {
+      const index = input.name.replace('color_', '');
+      colors[`cor_${index}`] = input.value;
+    }
+  });
+  
+  // Monta a URL com as cores como query parameters
+  const params = new URLSearchParams(colors);
+  const previewUrl = `/api/preview-colors/${matrixId}?${params.toString()}`;
+  
+  // Abre o modal com a preview
+  const modal = document.getElementById('colorPreviewModal');
+  const previewImg = document.getElementById('previewImage');
+  const downloadLink = document.getElementById('downloadLink');
+  
+  previewImg.src = previewUrl;
+  downloadLink.href = previewUrl + '&download=true';
+  downloadLink.download = 'preview-cores.png';
+  
+  modal.classList.add('open');
+}
+
+function closeColorPreview() {
+  const modal = document.getElementById('colorPreviewModal');
+  modal.classList.remove('open');
+}
+
+// Fechar modal ao clicar no backdrop
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('colorPreviewModal');
+  if (modal) {
+    const backdrop = modal.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', closeColorPreview);
+    }
+  }
+});
 
 // ─────────────────────────────────────────────
 // Inicialização

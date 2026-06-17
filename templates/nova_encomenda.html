@@ -3,7 +3,7 @@
 <head>
     <meta name="color-scheme" content="light dark">
     <meta charset="UTF-8">
-    <title>Encomenda - Ateliê Digital</title>
+    <title>Encomenda </title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
 </head>
@@ -17,9 +17,19 @@
             <h2>{% if encomenda %}Editar{% else %}Nova{% endif %} Encomenda</h2>
             <form method="POST">
                 <input type="hidden" name="matriz_id" value="{{ encomenda.matriz_id if encomenda and encomenda.matriz_id else '' }}">
+                
+                <div class="form-group">
+                    <label>Buscar Cliente Existente</label>
+                    <div style="position: relative;">
+                        <input type="text" id="clientSearch" placeholder="Digite o nome, email ou telefone..." style="width: 100%; padding: 10px; border-radius: 6px; border: 0.5px solid var(--border); font-family: 'DM Sans'; background: var(--bg); color: var(--text);">
+                        <div id="clientSuggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 0.5px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; display: none; z-index: 100;"></div>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Ou <a href="/clientes" target="_blank" style="color: var(--pink); text-decoration: none;">gerenciar clientes</a></p>
+                </div>
+
                 <div class="form-group">
                     <label>Nome do Cliente</label>
-                    <input type="text" name="cliente_nome" value="{{ encomenda.cliente_nome if encomenda else '' }}" required>
+                    <input type="text" id="cliente_nome" name="cliente_nome" value="{{ encomenda.cliente_nome if encomenda else '' }}" required>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -88,7 +98,95 @@
         </div>
     </div>
 
+    <style>
+        #clientSuggestions {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background: var(--bg);
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-name {
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .suggestion-contact {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+    </style>
+
     <script>
+        let allClientes = [];
+
+        // Carregar clientes ao carregar a página
+        fetch('/api/clientes')
+            .then(response => response.json())
+            .then(data => {
+                allClientes = data;
+            })
+            .catch(error => console.error('Erro ao buscar clientes:', error));
+
+        document.getElementById('clientSearch').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const suggestionsDiv = document.getElementById('clientSuggestions');
+
+            if (!query || query.length < 1) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            const filtered = allClientes.filter(c => 
+                c.nome.toLowerCase().includes(query) ||
+                c.email.toLowerCase().includes(query) ||
+                c.telefone.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                suggestionsDiv.innerHTML = '<div class="suggestion-item" style="cursor: default; color: var(--text-muted);">Nenhum cliente encontrado</div>';
+                suggestionsDiv.style.display = 'block';
+                return;
+            }
+
+            suggestionsDiv.innerHTML = filtered.map(c => `
+                <div class="suggestion-item" onclick="selectClient('${c._id}', '${c.nome.replace(/'/g, "\\'")}', '${c.telefone.replace(/'/g, "\\'")}', '${c.email.replace(/'/g, "\\'")}')">
+                    <div class="suggestion-name">${c.nome}</div>
+                    <div class="suggestion-contact">${c.email || 'Email não informado'} | ${c.telefone || 'Telefone não informado'}</div>
+                </div>
+            `).join('');
+
+            suggestionsDiv.style.display = 'block';
+        });
+
+        function selectClient(clientId, nome, telefone, email) {
+            document.getElementById('cliente_nome').value = nome;
+            document.getElementById('clientSearch').value = '';
+            document.getElementById('clientSuggestions').style.display = 'none';
+        }
+
+        // Fechar sugestões ao clicar fora
+        document.addEventListener('click', function(e) {
+            const search = document.getElementById('clientSearch');
+            const suggestions = document.getElementById('clientSuggestions');
+            if (!search.contains(e.target) && !suggestions.contains(e.target)) {
+                suggestions.style.display = 'none';
+            }
+        });
+
         function addCor() {
             const input = document.createElement('input');
             input.type = 'color';

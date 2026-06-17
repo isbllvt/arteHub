@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta name="color-scheme" content="light dark">
+    <meta charset="UTF-8">
+    <title>Clientes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="app">
+    <div class="topbar">
+        <a href="/" class="logo" style="text-decoration: none;">
+            <span class="logo-text">Arte <span>Hub</span></span>
+        </a>
+        <div class="topbar-nav">
+            <a href="/relatorio" class="nav-btn">Relatórios</a>
+            <a href="/encomenda" class="nav-btn">Encomendas</a>
+            <a href="/clientes" class="nav-btn active">Clientes</a>
+            <a href="/" class="nav-btn">Matrizes</a>
+        </div>
+    </div>
+
+    <div class="main-layout" style="grid-template-columns: var(--sidebar-w) 1fr;">
+        
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <label>Pesquisar Cliente</label>
+                <input class="search-box" type="text" id="search-input" placeholder="Nome, email, telefone..." oninput="filterClients()" />
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="content-header">
+                <span class="results-label" id="client-results-label">0 clientes</span>
+                <button onclick="openClientModal()" class="add-btn" >+ Novo Cliente</button>
+            </div>
+            
+            <div class="grid" id="client-grid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Novo/Editar Cliente -->
+<div id="clientModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="modalTitle">Novo Cliente</h2>
+            <button class="add-btn" onclick="closeClientModal()">✕</button>
+        </div>
+        
+        <form id="clientForm" method="POST" onsubmit="submitClientForm(event)">
+            <div class="form-group">
+                <label>ID do Cliente</label>
+                <input type="text" id="clientId" name="id" readonly style="background-color: var(--bg); cursor: not-allowed; opacity: 0.6;">
+                <small style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">ID gerado automaticamente</small>
+            </div>
+
+            <div class="form-group">
+                <label>Nome *</label>
+                <input type="text" id="clientNome" name="nome" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Telefone</label>
+                    <input type="tel" id="clientTelefone" name="telefone" placeholder="(XX) XXXXX-XXXX">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="clientEmail" name="email">
+                </div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+            <h3 style="margin-bottom: 15px; font-size: 14px; text-transform: uppercase; color: var(--text-muted);">Endereço</h3>
+
+            <div class="form-group">
+                <label>Rua</label>
+                <input type="text" id="clientRua" name="endereco_rua">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Número</label>
+                    <input type="text" id="clientNumero" name="endereco_numero">
+                </div>
+                <div class="form-group">
+                    <label>Bairro</label>
+                    <input type="text" id="clientBairro" name="endereco_bairro">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>CEP</label>
+                    <input type="text" id="clientCep" name="endereco_cep" placeholder="XXXXX-XXX">
+                </div>
+                <div class="form-group">
+                    <label>Cidade</label>
+                    <input type="text" id="clientCidade" name="endereco_cidade">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Estado</label>
+                <input type="text" id="clientEstado" name="endereco_estado" placeholder="SP, RJ, MG...">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Salvar Cliente</button>
+                <button type="button" onclick="closeClientModal()" class="btn-outline" style="flex: 1;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Visualizar Detalhes -->
+<div id="detailsModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h2>Detalhes do Cliente</h2>
+            <button class="modal-close" onclick="closeDetailsModal()">✕</button>
+        </div>
+        
+        <div id="detailsContent" style="padding: 20px 0;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <button onclick="editCurrentClient()" class="btn-primary" style="flex: 1;">Editar</button>
+            <button onclick="deleteCurrentClient()" class="btn-outline btn-danger" style="flex: 1;">Deletar</button>
+            <button type="button" onclick="closeDetailsModal()" class="btn-outline" style="flex: 1;">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 20px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--text-muted);
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-close:hover {
+        color: var(--text);
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--pink);
+        background: var(--surface);
+    }
+
+    .btn-primary, .btn-outline, .btn-danger {
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-primary {
+        background: var(--pink);
+        color: white;
+        border-color: var(--pink);
+    }
+
+    .btn-primary:hover {
+        background: var(--pink-mid);
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: var(--text);
+        border-color: var(--border);
+    }
+
+    .btn-outline:hover {
+        background: var(--bg);
+    }
+
+    .btn-danger {
+        color: #d9534f;
+        border-color: #d9534f;
+    }
+
+    .btn-danger:hover {
+        background: rgba(217, 83, 79, 0.1);
+    }
+
+    .add-btn {
+        padding: 10px 16px;
+        background: var(--pink);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .add-btn:hover {
+        background: var(--pink-mid);
+    }
+
+    .client-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .client-card:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-color: var(--pink-border);
+    }
+
+    .client-name {
+        font-weight: 500;
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
+
+    .client-info {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+</style>
+
+<script>
+    const clientes = {{ clientes | tojson | safe }};
+    let currentClientId = null;
+
+    function openClientModal(clientId = null) {
+        const modal = document.getElementById('clientModal');
+        const form = document.getElementById('clientForm');
+        const clientIdField = document.getElementById('clientId');
+        
+        if (clientId) {
+            // Editar cliente existente
+            const client = clientes.find(c => c._id === clientId);
+            if (client) {
+                document.getElementById('modalTitle').textContent = 'Editar Cliente';
+                clientIdField.readOnly = true;
+                clientIdField.style.backgroundColor = 'var(--bg)';
+                clientIdField.style.cursor = 'not-allowed';
+                clientIdField.style.opacity = '0.6';
+                clientIdField.value = client.id;
+                document.getElementById('clientNome').value = client.nome;
+                document.getElementById('clientTelefone').value = client.telefone;
+                document.getElementById('clientEmail').value = client.email;
+                document.getElementById('clientRua').value = client.endereco?.rua || '';
+                document.getElementById('clientNumero').value = client.endereco?.numero || '';
+                document.getElementById('clientBairro').value = client.endereco?.bairro || '';
+                document.getElementById('clientCep').value = client.endereco?.cep || '';
+                document.getElementById('clientCidade').value = client.endereco?.cidade || '';
+                document.getElementById('clientEstado').value = client.endereco?.estado || '';
+                
+                form.action = `/cliente/editar/${clientId}`;
+            }
+        } else {
+            // Novo cliente - calcular próximo ID
+            document.getElementById('modalTitle').textContent = 'Novo Cliente';
+            form.reset();
+            
+            // Calcular o próximo ID baseado nos clientes existentes
+            let nextId = 1;
+            if (clientes.length > 0) {
+                const ids = clientes.map(c => {
+                    try {
+                        return parseInt(c.id, 10);
+                    } catch {
+                        return 0;
+                    }
+                }).filter(id => !isNaN(id));
+                
+                if (ids.length > 0) {
+                    nextId = Math.max(...ids) + 1;
+                }
+            }
+            
+            clientIdField.readOnly = true;
+            clientIdField.style.backgroundColor = 'var(--bg)';
+            clientIdField.style.cursor = 'not-allowed';
+            clientIdField.style.opacity = '0.6';
+            clientIdField.value = nextId;
+            clientIdField.placeholder = 'ID será gerado automaticamente';
+            
+            form.action = '/cliente/novo';
+        }
+        
+        modal.style.display = 'flex';
+    }
+
+    function closeClientModal() {
+        document.getElementById('clientModal').style.display = 'none';
+        document.getElementById('clientForm').reset();
+    }
+
+    function submitClientForm(event) {
+        event.preventDefault();
+        document.getElementById('clientForm').submit();
+    }
+
+    function openDetailsModal(clientId) {
+        const client = clientes.find(c => c._id === clientId);
+        if (!client) return;
+        
+        currentClientId = clientId;
+        const modal = document.getElementById('detailsModal');
+        const content = document.getElementById('detailsContent');
+        
+        const enderecoHtml = client.endereco ? `
+            <div style="margin: 15px 0;">
+                <h4 style="font-size: 12px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Endereço</h4>
+                <p class="client-info"><strong>Rua:</strong> ${client.endereco.rua || '-'}</p>
+                <p class="client-info"><strong>Número:</strong> ${client.endereco.numero || '-'}</p>
+                <p class="client-info"><strong>Bairro:</strong> ${client.endereco.bairro || '-'}</p>
+                <p class="client-info"><strong>CEP:</strong> ${client.endereco.cep || '-'}</p>
+                <p class="client-info"><strong>Cidade:</strong> ${client.endereco.cidade || '-'}</p>
+                <p class="client-info"><strong>Estado:</strong> ${client.endereco.estado || '-'}</p>
+            </div>
+        ` : '';
+        
+        content.innerHTML = `
+            <p style="margin: 8px 0;"><strong style="font-weight: 600;">ID:</strong> ${client.id}</p>
+            <p style="margin: 8px 0;"><strong style="font-weight: 600;">Nome:</strong> ${client.nome}</p>
+            <p style="margin: 8px 0;"><strong style="font-weight: 600;">Telefone:</strong> ${client.telefone || '-'}</p>
+            <p style="margin: 8px 0;"><strong style="font-weight: 600;">Email:</strong> ${client.email || '-'}</p>
+            ${enderecoHtml}
+        `;
+        
+        modal.style.display = 'flex';
+    }
+
+    function closeDetailsModal() {
+        document.getElementById('detailsModal').style.display = 'none';
+        currentClientId = null;
+    }
+
+    function editCurrentClient() {
+        closeDetailsModal();
+        openClientModal(currentClientId);
+    }
+
+    function deleteCurrentClient() {
+        if (confirm('Tem certeza que deseja deletar este cliente?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/cliente/deletar/${currentClientId}`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function filterClients() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        
+        const filtered = clientes.filter(cli => {
+            return !query || 
+                   cli.nome.toLowerCase().includes(query) ||
+                   cli.email.toLowerCase().includes(query) ||
+                   cli.telefone.toLowerCase().includes(query) ||
+                   cli.id.toLowerCase().includes(query);
+        });
+
+        document.getElementById('client-results-label').textContent = `${filtered.length} cliente(s)`;
+        renderClientGrid(filtered);
+    }
+
+    function renderClientGrid(list) {
+        const grid = document.getElementById('client-grid');
+        
+        if (list.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">Nenhum cliente encontrado</p>';
+            return;
+        }
+
+        grid.innerHTML = list.map(cli => `
+            <div class="client-card" onclick="openDetailsModal('${cli._id}')">
+                <div class="client-name">${cli.nome}</div>
+                <div class="client-info"><strong>ID:</strong> ${cli.id}</div>
+                <div class="client-info"><strong>Telefone:</strong> ${cli.telefone || 'Não informado'}</div>
+                <div class="client-info"><strong>Email:</strong> ${cli.email || 'Não informado'}</div>
+                ${cli.endereco?.cidade ? `<div class="client-info"><strong>Cidade:</strong> ${cli.endereco.cidade}</div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    // Render inicial
+    filterClients();
+
+    // Fechar modais ao clicar fora
+    window.onclick = function(event) {
+        const clientModal = document.getElementById('clientModal');
+        const detailsModal = document.getElementById('detailsModal');
+        if (event.target === clientModal) {
+            closeClientModal();
+        }
+        if (event.target === detailsModal) {
+            closeDetailsModal();
+        }
+    }
+</script>
+
+</body>
+</html>

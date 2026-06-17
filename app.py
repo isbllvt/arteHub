@@ -1,9 +1,10 @@
 import os
 import time
-from flask import Flask, request, render_template, url_for, redirect  # type: ignore
+from flask import Flask, request, render_template, url_for, redirect, send_file, jsonify  # type: ignore
 import pyembroidery  # type: ignore
 from pymongo import MongoClient  # type: ignore
 from bson import ObjectId  # type: ignore
+import io
 
 try:
     from dotenv import load_dotenv  # type: ignore
@@ -58,7 +59,6 @@ def biblioteca():
             "tema": m.get("tema", "Geral"),
             "pontos": m.get("pontos", 0),
             "dimensoes": f"{m.get('tamanho', {}).get('largura_cm', 0)} × {m.get('tamanho', {}).get('altura_cm', 0)} cm",
-            "vezesUsada": m.get("vezesUsada", 0),
             "cores": cores_formatadas,
             "arquivo": arquivo,
             "png_url": url_for('static', filename=f'uploads/{arquivo_png}')
@@ -104,8 +104,7 @@ def upload_matriz():
                     "arquivo": file.filename,
                     "pontos": stitch_count, 
                     "tamanho": {"largura_cm": w, "altura_cm": h},
-                    "cores": colors, 
-                    "vezesUsada": 0
+                    "cores": colors
                 }
                 colecao.update_one({"arquivo": file.filename}, {"$set": doc}, upsert=True)
                 return redirect(url_for('biblioteca'))
@@ -155,6 +154,7 @@ colecao_encomendas = db["encomendas"]
 @app.route('/encomenda')
 def listar_encomendas():
     encomendas_db = list(colecao_encomendas.find({}).sort("data_pedido", -1))
+    matrizes_db = list(colecao.find({}, {"_id": 1, "nome": 1}))
     encomendas = []
     
     for enc in encomendas_db:
@@ -180,13 +180,10 @@ def listar_encomendas():
             "matriz_nome": matriz_nome
         })
         
-    return render_template('encomenda.html', encomenda=encomendas)
+    return render_template('encomenda.html', encomenda=encomendas, matrizes=matrizes_db)
 
 @app.route('/encomenda/nova', methods=['GET', 'POST'])
 def nova_encomenda():
-    # Busca lista de matrizes para o dropdown
-    matrizes_db = list(colecao.find({}, {"_id": 1, "nome": 1}))
-
     if request.method == 'POST':
         cores = request.form.getlist('cores_sugeridas')
         doc = {
@@ -202,20 +199,19 @@ def nova_encomenda():
         colecao_encomendas.insert_one(doc)
         return redirect(url_for('listar_encomendas'))
     
+    # GET request - redireciona para encomenda com query params (para pre-preencher modal)
+    query_string = ""
     matriz_id = request.args.get('matriz_id')
-    cores_sugeridas = []
-    
     if matriz_id:
+        params = [f"matriz_id={matriz_id}"]
         i = 0
         while f'color_{i}' in request.args:
-            cores_sugeridas.append(request.args.get(f'color_{i}'))
+            params.append(f"color_{i}={request.args.get(f'color_{i}')}")
             i += 1
-            
-    encomenda_mock = None
-    if matriz_id or cores_sugeridas:
-        encomenda_mock = {"cores_sugeridas": cores_sugeridas, "matriz_id": matriz_id}
-        
-    return render_template('nova_encomenda.html', encomenda=encomenda_mock, matrizes=matrizes_db)
+        query_string = "&".join(params)
+        return redirect(url_for('listar_encomendas') + f"?{query_string}")
+    
+    return redirect(url_for('listar_encomendas'))
 
 @app.route('/encomenda/editar/<id>', methods=['GET', 'POST'])
 def editar_encomenda(id):
@@ -261,6 +257,159 @@ def relatorios():
         })
         
     return render_template('relatorio.html', encomendas=encomendas)
+
+# ---------------------------------------------------
+# CLIENTES
+# ---------------------------------------------------
+colecao_clientes = db["clientes"]
+
+@app.route('/clientes')
+def listar_clientes():
+    clientes_db = list(colecao_clientes.find({}).sort("nome", 1))
+    clientes = []
+    
+    for cli in clientes_db:
+        clientes.append({
+            "_id": str(cli["_id"]),
+            "id": cli.get("id", ""),
+            "nome": cli.get("nome", ""),
+            "telefone": cli.get("telefone", ""),
+            "email": cli.get("email", ""),
+            "endereco": cli.get("endereco", {})
+        })
+    
+    return render_template('clientes.html', clientes=clientes)
+
+@app.route('/cliente/novo', methods=['POST'])
+def novo_cliente():
+    endereco = {
+        "rua": request.form.get("endereco_rua", ""),
+        "bairro": request.form.get("endereco_bairro", ""),
+        "numero": request.form.get("endereco_numero", ""),
+        "cep": request.form.get("endereco_cep", ""),
+        "cidade": request.form.get("endereco_cidade", ""),
+        "estado": request.form.get("endereco_estado", "")
+    }
+    
+    # Auto-generate sequential ID
+    all_clientes = list(colecao_clientes.find({}, {"id": 1}).sort("id", -1).limit(1))
+    next_id = 1
+    if all_clientes and all_clientes[0].get("id"):
+        try:
+            last_id = int(all_clientes[0].get("id", 0))
+            next_id = last_id + 1
+        except (ValueError, TypeError):
+            next_id = 1
+    
+    doc = {
+        "id": str(next_id),
+        "nome": request.form.get("nome", ""),
+        "telefone": request.form.get("telefone", ""),
+        "email": request.form.get("email", ""),
+        "endereco": endereco
+    }
+    
+    resultado = colecao_clientes.insert_one(doc)
+    return redirect(url_for('listar_clientes'))
+
+@app.route('/cliente/editar/<id>', methods=['POST'])
+def editar_cliente(id):
+    endereco = {
+        "rua": request.form.get("endereco_rua", ""),
+        "bairro": request.form.get("endereco_bairro", ""),
+        "numero": request.form.get("endereco_numero", ""),
+        "cep": request.form.get("endereco_cep", ""),
+        "cidade": request.form.get("endereco_cidade", ""),
+        "estado": request.form.get("endereco_estado", "")
+    }
+    
+    dados_atualizados = {
+        "id": request.form.get("id", ""),
+        "nome": request.form.get("nome", ""),
+        "telefone": request.form.get("telefone", ""),
+        "email": request.form.get("email", ""),
+        "endereco": endereco
+    }
+    
+    colecao_clientes.update_one({"_id": ObjectId(id)}, {"$set": dados_atualizados})
+    return redirect(url_for('listar_clientes'))
+
+@app.route('/cliente/deletar/<id>', methods=['POST'])
+def deletar_cliente(id):
+    colecao_clientes.delete_one({"_id": ObjectId(id)})
+    return redirect(url_for('listar_clientes'))
+
+@app.route('/api/clientes', methods=['GET'])
+def api_clientes():
+    """Retorna lista de clientes em JSON para autocomplete"""
+    from flask import jsonify
+    clientes_db = list(colecao_clientes.find({}, {"nome": 1, "_id": 1, "telefone": 1, "email": 1}).sort("nome", 1))
+    clientes = [{"_id": str(c["_id"]), "nome": c.get("nome", ""), "telefone": c.get("telefone", ""), "email": c.get("email", "")} for c in clientes_db]
+    return jsonify(clientes)
+
+@app.route('/api/cliente/<id>', methods=['GET'])
+def api_cliente_detail(id):
+    """Retorna detalhes completos de um cliente"""
+    try:
+        cliente = colecao_clientes.find_one({"_id": ObjectId(id)})
+        if cliente:
+            return jsonify({
+                "_id": str(cliente["_id"]),
+                "id": cliente.get("id", ""),
+                "nome": cliente.get("nome", ""),
+                "telefone": cliente.get("telefone", ""),
+                "email": cliente.get("email", ""),
+                "endereco": cliente.get("endereco", {})
+            })
+    except:
+        pass
+    return jsonify({"error": "Cliente não encontrado"}), 404
+
+# ---------------------------------------------------
+# CORES PREVIEW - Visualizar cores selecionadas
+# ---------------------------------------------------
+@app.route('/api/preview-colors/<id>', methods=['GET'])
+def preview_colors(id):
+    """Gera uma preview PNG com as cores selecionadas sem modificar a matriz original"""
+    try:
+        # Busca a matriz original
+        matriz = colecao.find_one({"_id": ObjectId(id)})
+        if not matriz:
+            return jsonify({"error": "Matriz não encontrada"}), 404
+        
+        # Lê o arquivo PES original
+        pes_path = os.path.join(app.config['UPLOAD_FOLDER'], matriz['arquivo'])
+        if not os.path.exists(pes_path):
+            return jsonify({"error": "Arquivo PES não encontrado"}), 404
+        
+        # Lê o pattern original
+        pattern = pyembroidery.read_pes(pes_path)
+        
+        # Pega as cores selecionadas da query string (cor_0, cor_1, etc)
+        for i in range(len(pattern.threadlist)):
+            color_key = f'cor_{i}'
+            if color_key in request.args:
+                cor_hex = request.args.get(color_key)
+                try:
+                    # Converte hex para int (sem o #)
+                    pattern.threadlist[i].color = int(cor_hex.lstrip('#'), 16)
+                except:
+                    pass
+        
+        # Gera PNG em memória (sem salvar no disco)
+        png_buffer = io.BytesIO()
+        pyembroidery.write_png(pattern, png_buffer)
+        png_buffer.seek(0)
+        
+        return send_file(
+            png_buffer,
+            mimetype='image/png',
+            as_attachment=False,
+            download_name='preview.png'
+        )
+    
+    except Exception as e:
+        return jsonify({"error": f"Erro ao gerar preview: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

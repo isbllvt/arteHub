@@ -12,11 +12,12 @@
 <div class="app">
     <div class="topbar">
         <a href="/" class="logo" style="text-decoration: none;">
-            <span class="logo-text">Ateliê <span>Digital</span></span>
+            <span class="logo-text">Arte <span>Hub</span></span>
         </a>
         <div class="topbar-nav">
             <a href="/relatorio" class="nav-btn">Relatórios</a>
             <a href="/encomenda" class="nav-btn active">Encomendas</a>
+            <a href="/clientes" class="nav-btn">Clientes</a>
             <a href="/" class="nav-btn">Matrizes</a>
         </div>
     </div>
@@ -49,7 +50,7 @@
         <div class="content-area">
             <div class="content-header">
                 <span class="results-label" id="order-results-label">0 encomendas</span>
-                <a href="/encomenda/nova" class="add-btn">+ Nova Encomenda</a>
+                <button type="button" class="add-btn" onclick="openNovaEncomendaModal()">+ Nova Encomenda</button>
             </div>
             
             <div class="grid" id="order-grid">
@@ -57,6 +58,311 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Visualizar Detalhes da Encomenda -->
+<div id="orderDetailsModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h2>Detalhes da Encomenda</h2>
+            <button class="modal-close" onclick="closeOrderDetailsModal()">✕</button>
+        </div>
+        
+        <div id="orderDetailsContent" style="padding: 20px 0;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <a id="editOrderBtn" href="#" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none;">Editar</a>
+            <button type="button" onclick="closeOrderDetailsModal()" class="btn-outline" style="flex: 1;">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Nova Encomenda -->
+<div id="novaEncomendaModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>Nova Encomenda</h2>
+            <button class="modal-close" onclick="closeNovaEncomendaModal()">✕</button>
+        </div>
+        
+        <form method="POST" action="/encomenda/nova" id="novaEncomendaForm" style="padding: 0 20px;">
+            <input type="hidden" name="matriz_id" value="">
+            
+            <div class="form-group">
+                <label>Buscar Cliente Existente</label>
+                <div style="position: relative;">
+                    <input type="text" id="clientSearch" placeholder="Digite o nome, email ou telefone..." style="width: 100%; padding: 10px; border-radius: 6px; border: 0.5px solid var(--border); font-family: 'DM Sans'; background: var(--bg); color: var(--text);">
+                    <div id="clientSuggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 0.5px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; display: none; z-index: 100;"></div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Ou <a href="/clientes" target="_blank" style="color: var(--pink); text-decoration: none;">gerenciar clientes</a></p>
+            </div>
+
+            <div class="form-group">
+                <label>Nome do Cliente</label>
+                <input type="text" id="cliente_nome" name="cliente_nome" value="" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group grid-group">
+                    <label>Tipo de Produto</label>
+                    <input type="text" name="produto_tipo" list="lista-produtos" value="" required>
+                    <datalist id="lista-produtos">
+                        <option value="Toalha">
+                        <option value="Roupão">
+                        <option value="Fralda">
+                        <option value="Body">
+                    </datalist>
+                </div>
+                <div class="form-group grid-group">
+                    <label>Quantidade</label>
+                    <input type="number" name="quantidade" value="1" min="1">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Matriz Associada</label>
+                <select name="matriz_id" style="width: 100%; padding: 10px; border-radius: 6px; border: 0.5px solid var(--border); font-family: 'DM Sans'; background: var(--bg); color: var(--text);">
+                    <option value="">Nenhuma matriz</option>
+                    {% for m in matrizes %}
+                        <option value="{{ m._id }}">{{ m.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status" style="width: 100%; padding: 10px; border-radius: 6px; border: 0.5px solid var(--border);">
+                    <option value="Pendente">Pendente</option>
+                    <option value="Em produção">Em produção</option>
+                    <option value="Em processo de entrega">Em processo de entrega</option>
+                    <option value="Entregue">Entregue</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Data Pedido</label>
+                    <input type="date" name="data_pedido" value="">
+                </div>
+                <div class="form-group">
+                    <label>Data Entrega</label>
+                    <input type="date" name="data_entrega" value="">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Cores Sugeridas</label>
+                <div id="container-cores">
+                    <input type="color" name="cores_sugeridas" value="#000000">
+                </div>
+                <button type="button" onclick="addCor()" class="btn-outline" style="margin-top: 10px; width: 100%;">+ Adicionar Cor</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn-primary btn-full">Salvar Encomenda</button>
+                <button type="button" onclick="closeNovaEncomendaModal()" class="btn-outline btn-full">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 20px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--text-muted);
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-close:hover {
+        color: var(--text);
+    }
+
+    .btn-primary {
+        padding: 10px 16px;
+        background: var(--pink);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        background: var(--pink-mid);
+    }
+
+    .btn-outline {
+        padding: 10px 16px;
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+        background: var(--bg);
+    }
+
+    .order-detail-row {
+        margin: 12px 0;
+        font-size: 13px;
+    }
+
+    .order-detail-label {
+        font-weight: 600;
+        color: var(--text);
+        display: inline-block;
+        min-width: 100px;
+    }
+
+    .order-detail-value {
+        color: var(--text);
+    }
+
+    .color-dots-detail {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+
+    .color-dot-detail {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 0.5px solid var(--border);
+        font-family: 'DM Sans';
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--pink);
+        box-shadow: 0 0 0 3px rgba(244, 192, 209, 0.2);
+    }
+
+    .grid-group {
+        margin-bottom: 0;
+    }
+
+    .btn-full {
+        width: 100%;
+    }
+
+    #clientSuggestions {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .suggestion-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s;
+    }
+
+    .suggestion-item:hover {
+        background: var(--bg);
+    }
+
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+
+    .suggestion-name {
+        font-weight: 500;
+        font-size: 13px;
+    }
+
+    .suggestion-contact {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+</style>
 
 <script>
     const encomendas = {{ encomenda | tojson | safe }};
@@ -98,7 +404,7 @@
 
             return `
             <div class="matrix-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-                <div class="card-info" style="padding: 15px;">
+                <div class="card-info" style="padding: 15px; cursor: pointer;" onclick="openOrderDetailsModal('${enc._id}')">
                     <div class="card-name" style="font-size: 15px; margin-bottom: 8px;"> ${enc.cliente_nome}</div>
                     <div class="card-meta" style="margin-bottom: 4px;"><strong>Produto:</strong> ${enc.quantidade}x ${enc.produto_tipo}</div>
                     <div class="card-meta" style="margin-bottom: 4px;"><strong>Matriz:</strong> ${enc.matriz_nome}</div>
@@ -119,8 +425,206 @@
         }).join('');
     }
 
+    function openOrderDetailsModal(orderId) {
+        const order = encomendas.find(e => e._id === orderId);
+        if (!order) return;
+
+        const modal = document.getElementById('orderDetailsModal');
+        const content = document.getElementById('orderDetailsContent');
+
+        // Gerar preview se houver matriz e cores
+        let previewHtml = '';
+        if (order.matriz_id && order.cores_sugeridas && order.cores_sugeridas.length > 0) {
+            const colorParams = order.cores_sugeridas.map((c, i) => `cor_${i}=${encodeURIComponent(c)}`).join('&');
+            const previewUrl = `/api/preview-colors/${order.matriz_id}?${colorParams}`;
+            previewHtml = `
+                <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+                    <div style="font-weight: 600; font-size: 13px; margin-bottom: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Visualização com Cores</div>
+                    <div style="background: var(--card-thumb-bg); border-radius: var(--radius-md); padding: 12px; display: flex; align-items: center; justify-content: center;">
+                        <img src="${previewUrl}" alt="Preview da Encomenda" style="max-width: 100%; max-height: 200px; object-fit: contain;">
+                    </div>
+                </div>
+            `;
+        }
+
+        const colorDotsHtml = order.cores_sugeridas && order.cores_sugeridas.length > 0 ? `
+            <div style="margin: 12px 0;">
+                <strong style="font-weight: 600;">Cores Sugeridas:</strong>
+                <div class="color-dots-detail">
+                    ${order.cores_sugeridas.map(c => `<div class="color-dot-detail" style="background: ${c};"></div>`).join('')}
+                </div>
+            </div>
+        ` : '';
+
+        content.innerHTML = `
+            ${previewHtml}
+            <div class="order-detail-row">
+                <span class="order-detail-label">Cliente:</span>
+                <span class="order-detail-value">${order.cliente_nome}</span>
+            </div>
+            <div class="order-detail-row">
+                <span class="order-detail-label">Produto:</span>
+                <span class="order-detail-value">${order.quantidade}x ${order.produto_tipo}</span>
+            </div>
+            <div class="order-detail-row">
+                <span class="order-detail-label">Matriz:</span>
+                <span class="order-detail-value">${order.matriz_nome}</span>
+            </div>
+            <div class="order-detail-row">
+                <span class="order-detail-label">Status:</span>
+                <span class="order-detail-value"><span class="chip active" style="display: inline-block;">${order.status}</span></span>
+            </div>
+            <div class="order-detail-row">
+                <span class="order-detail-label">Data Pedido:</span>
+                <span class="order-detail-value">${order.data_pedido ? order.data_pedido.split('-').reverse().join('/') : 'Não informada'}</span>
+            </div>
+            <div class="order-detail-row">
+                <span class="order-detail-label">Data Entrega:</span>
+                <span class="order-detail-value">${order.data_entrega ? order.data_entrega.split('-').reverse().join('/') : 'Não informada'}</span>
+            </div>
+            ${colorDotsHtml}
+        `;
+
+        document.getElementById('editOrderBtn').href = `/encomenda/editar/${orderId}`;
+        modal.style.display = 'flex';
+    }
+
+    function closeOrderDetailsModal() {
+        document.getElementById('orderDetailsModal').style.display = 'none';
+    }
+
+    function openNovaEncomendaModal() {
+        document.getElementById('novaEncomendaModal').style.display = 'flex';
+        document.getElementById('novaEncomendaForm').reset();
+        loadMatrizesForModal();
+    }
+
+    function closeNovaEncomendaModal() {
+        document.getElementById('novaEncomendaModal').style.display = 'none';
+    }
+
+    function loadMatrizesForModal() {
+        // As matrizes já estão carregadas na página pelo Jinja2
+    }
+
+    let allClientes = [];
+
+    // Carregar clientes ao carregar a página
+    fetch('/api/clientes')
+        .then(response => response.json())
+        .then(data => {
+            allClientes = data;
+        })
+        .catch(error => console.error('Erro ao buscar clientes:', error));
+
+    // Event listener para busca de clientes na modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const clientSearch = document.getElementById('clientSearch');
+        if (clientSearch) {
+            clientSearch.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                const suggestionsDiv = document.getElementById('clientSuggestions');
+
+                if (!query || query.length < 1) {
+                    suggestionsDiv.style.display = 'none';
+                    return;
+                }
+
+                const filtered = allClientes.filter(c => 
+                    c.nome.toLowerCase().includes(query) ||
+                    c.email.toLowerCase().includes(query) ||
+                    c.telefone.toLowerCase().includes(query)
+                );
+
+                if (filtered.length === 0) {
+                    suggestionsDiv.innerHTML = '<div class="suggestion-item" style="cursor: default; color: var(--text-muted);">Nenhum cliente encontrado</div>';
+                    suggestionsDiv.style.display = 'block';
+                    return;
+                }
+
+                suggestionsDiv.innerHTML = filtered.map(c => `
+                    <div class="suggestion-item" onclick="selectClient('${c._id}', '${c.nome.replace(/'/g, "\\'")}', '${c.telefone.replace(/'/g, "\\'")}', '${c.email.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                        <div class="suggestion-name">${c.nome}</div>
+                        <div class="suggestion-contact">${c.email || 'Email não informado'} | ${c.telefone || 'Telefone não informado'}</div>
+                    </div>
+                `).join('');
+
+                suggestionsDiv.style.display = 'block';
+            });
+        }
+    });
+
+    function selectClient(clientId, nome, telefone, email) {
+        document.getElementById('cliente_nome').value = nome;
+        document.getElementById('clientSearch').value = '';
+        document.getElementById('clientSuggestions').style.display = 'none';
+    }
+
+    function addCor() {
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.name = 'cores_sugeridas';
+        input.value = '#000000';
+        input.style.marginRight = '5px';
+        document.getElementById('container-cores').appendChild(input);
+    }
+
+    // Fechar modal ao clicar fora
+    window.onclick = function(event) {
+        const orderModal = document.getElementById('orderDetailsModal');
+        const novaModal = document.getElementById('novaEncomendaModal');
+        if (event.target === orderModal) {
+            closeOrderDetailsModal();
+        }
+        if (event.target === novaModal) {
+            closeNovaEncomendaModal();
+        }
+    }
+
+    // Fechar sugestões de cliente ao clicar fora
+    document.addEventListener('click', function(e) {
+        const search = document.getElementById('clientSearch');
+        const suggestions = document.getElementById('clientSuggestions');
+        if (search && suggestions && !search.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.style.display = 'none';
+        }
+    });
+
     // Render inicial
     filterOrders();
+
+    // Verificar se há query params para abrir modal pré-preenchida
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('matriz_id')) {
+            // Delay para garantir que tudo está carregado
+            setTimeout(function() {
+                openNovaEncomendaModal();
+                
+                // Pre-preencher cores
+                const form = document.getElementById('novaEncomendaForm');
+                form.querySelector('input[name="matriz_id"]').value = params.get('matriz_id') || '';
+                
+                // Limpar cores anteriores e adicionar as cores dos params
+                const container = document.getElementById('container-cores');
+                container.innerHTML = '';
+                let i = 0;
+                while (params.has(`color_${i}`)) {
+                    const cor = params.get(`color_${i}`);
+                    const input = document.createElement('input');
+                    input.type = 'color';
+                    input.name = 'cores_sugeridas';
+                    input.value = cor;
+                    input.style.marginRight = '5px';
+                    container.appendChild(input);
+                    i++;
+                }
+                
+                // Limpar a URL para não manter os params
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }, 100);
+        }
+    });
 </script>
 </body>
 </html>
